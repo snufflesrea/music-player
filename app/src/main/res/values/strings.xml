@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Music Player</string>
+    <string name="last_track">This is the Last Track</string>
 </resources>
