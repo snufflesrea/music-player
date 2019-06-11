@@ -1,5 +1,6 @@
 package me.crosswall.lib.coverflow.core;
-import androidx.core.view.LinkagePager;
+
+import android.support.v4.view.LinkagePager;
 import android.view.View;
 
 

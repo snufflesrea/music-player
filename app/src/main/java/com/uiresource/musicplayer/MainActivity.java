@@ -2,60 +2,28 @@ package com.uiresource.musicplayer;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.location.SettingInjectorService;
 import android.media.AudioManager;
-import android.media.Image;
 import android.media.MediaPlayer;
-import android.net.Uri;
-import android.os.Build;
-import android.os.PowerManager;
-import android.provider.ContactsContract;
-import android.provider.MediaStore;
-
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
-import androidx.appcompat.graphics.Palette;
+import android.os.PowerManager;
+import android.provider.MediaStore;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
 import java.io.IOException;
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.LogRecord;
 
-import me.crosswall.lib.coverflow.CoverFlow;
-import me.crosswall.lib.coverflow.core.PagerContainer;
-
-import static android.R.attr.duration;
-import static android.R.attr.format;
-import static android.R.attr.progressBarStyle;
-import static android.R.attr.tag;
-import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
-import static android.media.CamcorderProfile.get;
 import static com.uiresource.musicplayer.R.id.tv_song;
 
 public class MainActivity extends AppCompatActivity {
