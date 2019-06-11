@@ -6,18 +6,20 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.location.SettingInjectorService;
 import android.media.AudioManager;
 import android.media.Image;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
-import android.support.v4.view.PagerAdapter;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v7.graphics.Palette;
+import androidx.appcompat.graphics.Palette;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,22 +43,22 @@ import java.io.IOException;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogRecord;
 
 import me.crosswall.lib.coverflow.CoverFlow;
 import me.crosswall.lib.coverflow.core.PagerContainer;
 
+import static android.R.attr.duration;
 import static android.R.attr.format;
+import static android.R.attr.progressBarStyle;
 import static android.R.attr.tag;
 import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 import static android.media.CamcorderProfile.get;
 import static com.uiresource.musicplayer.R.id.tv_song;
 
 public class MainActivity extends AppCompatActivity {
-
-    public static int[] covers = {R.drawable.peach, R.drawable.album2, R.drawable.album3, R.drawable.peach, R.drawable.album2, R.drawable.album3 };
-    public static String[] song = {"Make War", "Shadow", "Black Parade","Make War", "Shadow", "Black Parade" };
 
     private String TAG = "#"+ getClass().getSimpleName();
 
@@ -67,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton mPlayerControl;
     private ImageButton forwardButton;
     private ImageButton backwardButton;
+    private ImageButton repeatButton;
+    private ImageButton shufflesButton;
 
     private MediaPlayer mediaPlayer;
     private ListView TrackList;
@@ -77,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar progressBar;
 
     private Handler myHandler = new Handler();
+    private Boolean isRepeat = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,11 +103,11 @@ public class MainActivity extends AppCompatActivity {
         backwardButton = (ImageButton) findViewById(R.id.button_backward);
 
         mPlayerControl = (ImageButton) findViewById(R.id.ic_play);
-        mPlayerControl.setImageResource(R.drawable.ic_play);
+        mPlayerControl.setImageResource(R.drawable.ic_play_button);
 
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
+        mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
 
         //Engage the listView so when it is clicked the Media Player is prepared
         TrackList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -110,26 +115,34 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (mediaPlayer.isPlaying()){
                     mediaPlayer.stop();
-                    mPlayerControl.setImageResource(R.drawable.ic_play);
+                    mPlayerControl.setImageResource(R.drawable.ic_play_button);
                 }
+                mediaPlayer.setLooping(false);
+                isRepeat = false;
                 mediaPlayer.reset();
                 PlayMediaPlayer(MainActivity.this, position);
                 CurrentTrackIndex = position;
             }
         });
 
-        //Engage seekBar with MediaPlayer
-        final Runnable updateSeekBar = new Runnable() {
+        //set onCompletionListener to Media Player. After the song ended, the next track should be play continously
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
-            public void run() {
-                if (mediaPlayer.isPlaying())
-                {progressBar.setProgress(mediaPlayer.getCurrentPosition());
-                    int timeDuration = mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition();
-                    duration.setText(TimeFormat(mediaPlayer.getCurrentPosition()));
-                    currentTime.setText(TimeFormat(timeDuration));}
-          myHandler.postDelayed(this, 1000);  }
-        };
-
+            public void onCompletion(MediaPlayer mp) {
+                if (isRepeat == false && mediaPlayer != null){
+                    if(CurrentTrackIndex < Playlist.size()-1){
+                        mediaPlayer.reset();
+                        CurrentTrackIndex = CurrentTrackIndex + 1;
+                        PlayMediaPlayer(MainActivity.this, CurrentTrackIndex);
+                        mediaPlayer.start();
+                    }
+                    else{
+                        mediaPlayer.reset();
+                        mPlayerControl.setImageResource(R.drawable.ic_play_button);
+                    }
+                }
+            }
+        });
 
         //Set click for Play and Pause button
         mPlayerControl.setOnClickListener(new View.OnClickListener() {
@@ -138,15 +151,11 @@ public class MainActivity extends AppCompatActivity {
                 if (mediaPlayer.isPlaying())
                 {mediaPlayer.pause();
                  SetSeekBarDuration(updateSeekBar);
-                mPlayerControl.setImageResource(R.drawable.ic_play);}
-                //else if(mediaPlayer.getCurrentPosition() == mediaPlayer.getDuration()){
-                    //mediaPlayer.stop();
-                    //mPlayerControl.setImageResource(R.drawable.ic_play);
-                //}
+                mPlayerControl.setImageResource(R.drawable.ic_play_button);}
                 else{
                     SetSeekBarDuration(updateSeekBar);
                     mediaPlayer.start();
-                    mPlayerControl.setImageResource(R.drawable.ic_pause);
+                    mPlayerControl.setImageResource(R.drawable.ic_pause_button);
                 }
             }
         });
@@ -157,10 +166,11 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (CurrentTrackIndex < Playlist.size()-1 ){
                 mediaPlayer.stop();
-                mPlayerControl.setImageResource(R.drawable.ic_play);
+                mPlayerControl.setImageResource(R.drawable.ic_play_button);
                 mediaPlayer.reset();
                 CurrentTrackIndex = CurrentTrackIndex +1;
-                PlayMediaPlayer(getApplicationContext(),CurrentTrackIndex);}
+                PlayMediaPlayer(getApplicationContext(),CurrentTrackIndex);
+                }
                 else {
                     Toast.makeText(getApplicationContext(), R.string.last_track, Toast.LENGTH_LONG).show();
                 }
@@ -173,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (CurrentTrackIndex > 0){
                     mediaPlayer.stop();
-                    mPlayerControl.setImageResource(R.drawable.ic_play);
+                    mPlayerControl.setImageResource(R.drawable.ic_play_button);
                     mediaPlayer.reset();
                     CurrentTrackIndex = CurrentTrackIndex - 1;
                     PlayMediaPlayer(getApplicationContext(), CurrentTrackIndex);
@@ -182,30 +192,43 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-    }
 
-
-    public Bitmap drawableToBitmap(int id) {
-        Bitmap bitmap = null;
-        Drawable drawable = getResources().getDrawable(id);
-        if (drawable instanceof BitmapDrawable) {
-            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-            if(bitmapDrawable.getBitmap() != null) {
-                return bitmapDrawable.getBitmap();
+        //set SeekBar to be draggable
+        progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (mediaPlayer != null && fromUser) {
+                    mediaPlayer.seekTo(progress);
+                }
             }
-        }
 
-        if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
-            bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
-        } else {
-            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-        }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
 
-        Canvas canvas = new Canvas(bitmap);
-        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-        drawable.draw(canvas);
-        return bitmap;
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
     }
+
+
+    public void repeat(View v){
+    if (mediaPlayer != null)
+    {      isRepeat = true;
+        mediaPlayer.setLooping(true);}
+    }
+
+    public void shuffles(View v){
+        Random random = new Random();
+        int integer =0;
+            do{
+       integer = random.nextInt(Playlist.size()) + 0;
+        } while (integer >= Playlist.size() || integer < 0);
+        mediaPlayer.stop();
+        mediaPlayer.reset();
+        PlayMediaPlayer(MainActivity.this, integer);
+        mediaPlayer.start();
+    }
+
 
     //Method to get all MP3 available in Content Provider and return it in list
     private List<Mp3File> getMp3List(Context context) {
@@ -242,15 +265,16 @@ public class MainActivity extends AppCompatActivity {
     public void PlayMediaPlayer(Context context, int ID){
         Mp3File mp3  = Playlist.get(ID);
         try {
+
             mediaPlayer.setDataSource(getApplicationContext(), mp3.getUri());
             mediaPlayer.prepare();
             TitleTv.setText(mp3.getTitle());
             ArtistTv.setText(mp3.getArtist());
-            int timeDuration = mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition();
-            currentTime.setText(TimeFormat(timeDuration));
+            SetSeekBarDuration(updateSeekBar);
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        } catch (IllegalStateException e)
+        {e.printStackTrace();}
     }
 
     //This method to se the duration on progress bar
@@ -275,5 +299,17 @@ public class MainActivity extends AppCompatActivity {
             return  "00:00";
         }
     }
+
+    //Engage seekBar with MediaPlayer
+    final Runnable updateSeekBar = new Runnable() {
+        @Override
+        public void run() {
+            if (mediaPlayer.isPlaying())
+            {progressBar.setProgress(mediaPlayer.getCurrentPosition());
+                int timeDuration = mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition();
+                duration.setText(TimeFormat(mediaPlayer.getCurrentPosition()));
+                currentTime.setText(TimeFormat(timeDuration));}
+            myHandler.postDelayed(this, 1000);  }
+    };
 
 }

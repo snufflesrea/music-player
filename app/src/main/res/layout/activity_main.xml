@@ -34,6 +34,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:src="@drawable/ic_repeat"
+            android:onClick="repeat"
             android:background="@null"/>
 
         <ImageButton
@@ -51,7 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:id="@+id/ic_play"
-            android:background="@null"/>
+            android:background="@drawable/bg_btn_play"/>
 
         <ImageButton
             android:id="@+id/button_forward"
@@ -68,6 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:src="@drawable/ic_shuffle"
+            android:onClick="shuffles"
             android:background="@null"/>
     </LinearLayout>
 
